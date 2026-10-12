@@ -1,0 +1,24 @@
+{
+  "name": "ai-translator-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Express API proxying translation requests to a cloud AI provider",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "test": "mocha \"test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "chai": "^4.4.1",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "mocha": "^10.4.0",
+    "prettier": "^3.2.5"
+  }
+}

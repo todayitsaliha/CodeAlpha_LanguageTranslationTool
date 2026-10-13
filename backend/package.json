@@ -1,24 +1,37 @@
 {
   "name": "ai-translator-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Express API proxying translation requests to a cloud AI provider",
   "main": "src/server.js",
   "engines": {
-    "node": ">=18"
+    "node": ">=18.11"
   },
   "scripts": {
     "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "test": "mocha \"test/**/*.test.js\""
+    "format:write": "prettier --write .",
+    "test": "mocha \"test/**/*.test.js\"",
+    "test:coverage": "c8 --reporter=text --reporter=lcov mocha \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "pino": "^9.0.0",
+    "pino-http": "^10.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "c8": "^9.1.0",
     "chai": "^4.4.1",
     "eslint": "^9.0.0",
     "globals": "^15.0.0",
     "mocha": "^10.4.0",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "supertest": "^7.0.0"
   }
 }

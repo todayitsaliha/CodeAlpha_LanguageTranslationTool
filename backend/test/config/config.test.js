@@ -49,6 +49,54 @@ describe('config.loadConfig', () => {
     expect(config.provider.microsoft).to.deep.equal({ key: 'k', region: '' });
   });
 
+  describe('gemini', () => {
+    const GEMINI_ENV = { TRANSLATION_PROVIDER: 'gemini', GEMINI_API_KEY: 'g-key' };
+
+    it('requires an API key', () => {
+      expect(() => loadConfig({ TRANSLATION_PROVIDER: 'gemini' })).to.throw(/GEMINI_API_KEY/);
+    });
+
+    it('defaults to the current Flash-Lite model and a longer timeout', () => {
+      const config = loadConfig(GEMINI_ENV);
+      expect(config.provider.name).to.equal('gemini');
+      expect(config.provider.gemini).to.deep.equal({
+        apiKey: 'g-key',
+        model: 'gemini-3.5-flash-lite',
+      });
+      expect(config.provider.timeoutMs).to.equal(20000);
+    });
+
+    it('lets the model and timeout be overridden', () => {
+      const config = loadConfig({
+        ...GEMINI_ENV,
+        GEMINI_MODEL: 'gemini-3.6-flash',
+        PROVIDER_TIMEOUT_MS: '5000',
+      });
+      expect(config.provider.gemini.model).to.equal('gemini-3.6-flash');
+      expect(config.provider.timeoutMs).to.equal(5000);
+    });
+
+    it('falls back to the default model when GEMINI_MODEL is blank', () => {
+      expect(loadConfig({ ...GEMINI_ENV, GEMINI_MODEL: '  ' }).provider.gemini.model).to.equal(
+        'gemini-3.5-flash-lite'
+      );
+    });
+
+    it('rejects model names that could alter the request URL', () => {
+      for (const model of ['a/b', 'x?key=1', 'model name', '../etc']) {
+        expect(() => loadConfig({ ...GEMINI_ENV, GEMINI_MODEL: model })).to.throw(/GEMINI_MODEL/);
+      }
+    });
+
+    it('does not change the timeout default for other providers', () => {
+      expect(loadConfig(GOOGLE_ENV).provider.timeoutMs).to.equal(8000);
+    });
+
+    it('is not required when another provider is selected', () => {
+      expect(() => loadConfig(GOOGLE_ENV)).to.not.throw();
+    });
+  });
+
   it('rejects unknown providers', () => {
     expect(() => loadConfig({ TRANSLATION_PROVIDER: 'deepl' })).to.throw(/must be one of/);
   });

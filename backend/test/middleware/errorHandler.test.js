@@ -63,6 +63,21 @@ describe('error handling middleware', () => {
     expect(logged.error.stack).to.contain('Error: database password');
   });
 
+  it('logs a failed request once at error level, plus a completion line with no synthetic error', async () => {
+    await request(app).get('/boom').expect(500);
+    const entries = capture.entries();
+
+    const errors = entries.filter((e) => e.level >= 50);
+    expect(errors).to.have.length(1);
+    expect(errors[0].code).to.equal('UNHANDLED_ERROR');
+
+    const completion = entries.find((e) => e.res && e.responseTime !== undefined);
+    expect(completion.res.statusCode).to.equal(500);
+    expect(completion.level).to.equal(40);
+    expect(completion.msg).to.equal('request completed');
+    expect(completion).to.not.have.property('err');
+  });
+
   it('returns 404 in the same shape for unknown routes', async () => {
     const res = await request(app).get('/nothing-here').expect(404);
     expect(res.body).to.have.all.keys('status', 'message', 'requestId');

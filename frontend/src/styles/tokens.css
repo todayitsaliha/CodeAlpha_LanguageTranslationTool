@@ -1,0 +1,30 @@
+:root {
+  /* Palette (taken from the pixel-art reference) */
+  --ink: #1b1f5e;
+  --indigo: #5468e8;
+  --indigo-deep: #4254cf;
+  --cream: #f9f6f1;
+  --card: #fffdf9;
+  --lavender: #eef0fd;
+  --periwinkle: #b9c3f5;
+  --periwinkle-soft: #d6dcfa;
+  --gold: #ffc94d;
+  --danger: #c62d3a;
+  --muted: #56598a;
+  --white: #ffffff;
+
+  /* Type */
+  --font-display: 'Pixelify Sans', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-text: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.75rem;
+
+  /* Shape */
+  --stroke: 3px;
+  --radius: 4px;
+  --shadow-card: 6px 6px 0 var(--periwinkle);
+  --shadow-press: 0 4px 0 var(--ink);
+}

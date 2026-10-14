@@ -1,6 +1,7 @@
 'use strict';
 
-const PROVIDERS = ['google', 'microsoft'];
+const PROVIDERS = ['google', 'microsoft', 'gemini'];
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 function readInt(env, name, fallback, min = 1) {
   const raw = env[name];
@@ -30,12 +31,21 @@ function loadConfig(env = process.env) {
   const googleApiKey = readString(env, 'GOOGLE_TRANSLATE_API_KEY');
   const microsoftKey = readString(env, 'MICROSOFT_TRANSLATOR_KEY');
   const microsoftRegion = readString(env, 'MICROSOFT_TRANSLATOR_REGION');
+  const geminiKey = readString(env, 'GEMINI_API_KEY');
+  const geminiModel = readString(env, 'GEMINI_MODEL', DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
 
   if (providerName === 'google' && !googleApiKey) {
     throw new Error('GOOGLE_TRANSLATE_API_KEY is required when TRANSLATION_PROVIDER=google');
   }
   if (providerName === 'microsoft' && !microsoftKey) {
     throw new Error('MICROSOFT_TRANSLATOR_KEY is required when TRANSLATION_PROVIDER=microsoft');
+  }
+  if (providerName === 'gemini' && !geminiKey) {
+    throw new Error('GEMINI_API_KEY is required when TRANSLATION_PROVIDER=gemini');
+  }
+  // The model name becomes part of the request URL, so only accept plain model identifiers.
+  if (!/^[A-Za-z0-9._-]+$/.test(geminiModel)) {
+    throw new Error('GEMINI_MODEL may only contain letters, digits, ".", "_" and "-"');
   }
 
   const corsOrigins = readString(env, 'CORS_ORIGIN', 'http://localhost:3000')
@@ -59,9 +69,11 @@ function loadConfig(env = process.env) {
     }),
     provider: Object.freeze({
       name: providerName,
-      timeoutMs: readInt(env, 'PROVIDER_TIMEOUT_MS', 8000),
+      // Generating a translation with an AI model takes longer than a dedicated API call.
+      timeoutMs: readInt(env, 'PROVIDER_TIMEOUT_MS', providerName === 'gemini' ? 20000 : 8000),
       google: Object.freeze({ apiKey: googleApiKey }),
       microsoft: Object.freeze({ key: microsoftKey, region: microsoftRegion }),
+      gemini: Object.freeze({ apiKey: geminiKey, model: geminiModel }),
     }),
   });
 }

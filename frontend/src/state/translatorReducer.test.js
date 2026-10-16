@@ -192,6 +192,14 @@ describe('translatorReducer', () => {
     expect(next).toMatchObject({ validationError: 'Enter some text.', status: 'idle' });
   });
 
+  it('counts every validation failure, even with an unchanged message', () => {
+    const action = { type: 'validation_failed', message: 'Enter some text.' };
+    const once = reduce(stateWith(), action);
+    const twice = reduce(once, action);
+    expect(once.validationVersion).toBe(1);
+    expect(twice.validationVersion).toBe(2);
+  });
+
   it('ignores unknown actions', () => {
     const state = stateWith();
     expect(reduce(state, { type: 'nope' })).toBe(state);

@@ -15,6 +15,8 @@ export function createInitialState(defaultTarget) {
     result: null,
     error: null,
     validationError: null,
+    // Counts validation failures so the UI can move focus to the text box each time.
+    validationVersion: 0,
   };
 }
 
@@ -84,7 +86,11 @@ export function translatorReducer(state, action) {
         validationError: null,
       };
     case 'validation_failed':
-      return { ...state, validationError: action.message };
+      return {
+        ...state,
+        validationError: action.message,
+        validationVersion: state.validationVersion + 1,
+      };
     case 'request_started':
       return { ...state, status: 'loading', error: null, validationError: null };
     case 'request_succeeded':

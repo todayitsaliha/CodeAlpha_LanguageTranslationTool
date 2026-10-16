@@ -58,4 +58,48 @@ describe('TextPanel', () => {
     renderPanel({ value: '' });
     expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
   });
+
+  it('moves focus to the text area each time the focus signal increases', () => {
+    const { rerender } = render(
+      <TextPanel
+        value=""
+        maxLength={10}
+        validationMessage={null}
+        onChange={() => {}}
+        onClear={() => {}}
+      />
+    );
+    expect(screen.getByLabelText('Your text')).not.toHaveFocus();
+
+    for (const signal of [1, 2]) {
+      screen.getByRole('button', { name: 'Clear' }).focus();
+      rerender(
+        <TextPanel
+          value=""
+          maxLength={10}
+          validationMessage="Enter some text."
+          focusSignal={signal}
+          onChange={() => {}}
+          onClear={() => {}}
+        />
+      );
+      expect(screen.getByLabelText('Your text')).toHaveFocus();
+    }
+  });
+
+  it('puts focus back in the text area after Clear', async () => {
+    const onClear = jest.fn();
+    render(
+      <TextPanel
+        value="Hello"
+        maxLength={10}
+        validationMessage={null}
+        onChange={() => {}}
+        onClear={onClear}
+      />
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(onClear).toHaveBeenCalled();
+    expect(screen.getByLabelText('Your text')).toHaveFocus();
+  });
 });

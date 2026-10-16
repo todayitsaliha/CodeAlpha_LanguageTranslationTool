@@ -1,7 +1,28 @@
+import { useEffect, useRef } from 'react';
 import { countCharacters } from '../utils/text';
 
 /** The input side: text area, live character counter, Clear, and inline validation. */
-export default function TextPanel({ value, maxLength, validationMessage, onChange, onClear }) {
+export default function TextPanel({
+  value,
+  maxLength,
+  validationMessage,
+  focusSignal = 0,
+  onChange,
+  onClear,
+}) {
+  const textarea = useRef(null);
+
+  // When validation fails, take the person straight to the field that needs fixing.
+  useEffect(() => {
+    if (focusSignal > 0) textarea.current?.focus();
+  }, [focusSignal]);
+
+  // Clear disables itself once the box is empty, which would drop keyboard focus.
+  function handleClear() {
+    onClear();
+    textarea.current?.focus();
+  }
+
   const count = countCharacters(value);
   const overLimit = count > maxLength;
   const describedBy = ['char-count', validationMessage ? 'source-text-error' : null]
@@ -14,6 +35,7 @@ export default function TextPanel({ value, maxLength, validationMessage, onChang
         Your text
       </label>
       <textarea
+        ref={textarea}
         id="source-text"
         className="panel__textarea"
         value={value}
@@ -28,7 +50,12 @@ export default function TextPanel({ value, maxLength, validationMessage, onChang
           <span className="sr-only"> characters</span>
           {overLimit && <span className="counter__flag"> Over limit</span>}
         </span>
-        <button type="button" className="link-btn" onClick={onClear} disabled={value.length === 0}>
+        <button
+          type="button"
+          className="link-btn"
+          onClick={handleClear}
+          disabled={value.length === 0}
+        >
           Clear
         </button>
       </div>

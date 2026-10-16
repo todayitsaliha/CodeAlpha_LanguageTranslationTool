@@ -73,6 +73,42 @@ describe('OutputPanel', () => {
     expect(screen.queryByText(/reference/i)).not.toBeInTheDocument();
   });
 
+  it('offers Copy and Listen only once there is a translation', () => {
+    const { rerender } = renderPanel({
+      status: 'success',
+      result: { translatedText: 'Hola', target: 'es' },
+    });
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Listen' })).toBeInTheDocument();
+
+    for (const props of [
+      { status: 'idle' },
+      { status: 'loading' },
+      { status: 'error', error: { message: 'Nope.' } },
+    ]) {
+      rerender(
+        <OutputPanel
+          result={null}
+          error={null}
+          languageName={languageName}
+          onRetry={() => {}}
+          {...props}
+        />
+      );
+      expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Listen' })).not.toBeInTheDocument();
+    }
+  });
+
+  it('keeps the action buttons outside the live region so they are not re-announced', () => {
+    const { container } = renderPanel({
+      status: 'success',
+      result: { translatedText: 'Hola', target: 'es' },
+    });
+    const region = container.querySelector('[aria-live="polite"]');
+    expect(region).not.toContainElement(screen.getByRole('button', { name: 'Copy' }));
+  });
+
   it('renders every state inside one polite live region', () => {
     const { container } = renderPanel({ status: 'loading' });
     const region = container.querySelector('[aria-live="polite"]');

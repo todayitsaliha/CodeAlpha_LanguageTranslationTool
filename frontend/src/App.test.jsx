@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError, fetchLanguages, translateText } from './api/client';
 import App from './App';
+import { mockClipboard, mockSpeech } from './test/browserMocks';
 
 jest.mock('./api/client', () => ({
   ...jest.requireActual('./api/client'),
@@ -118,7 +119,11 @@ describe('App: translating', () => {
 
     await user.dblClick(translateButton());
 
-    expect(screen.getByRole('button', { name: 'Translating…' })).toBeDisabled();
+    // aria-disabled (not disabled) so keyboard focus is not dropped while waiting.
+    expect(screen.getByRole('button', { name: 'Translating…' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    );
     expect(screen.getAllByText('Translating…').length).toBeGreaterThan(0);
     expect(translateText).toHaveBeenCalledTimes(1);
 
@@ -277,5 +282,138 @@ describe('App: swap and clear', () => {
     pending.resolve({ translatedText: 'Hola', target: 'es' });
     await waitFor(() => expect(translateButton()).toBeEnabled());
     expect(screen.queryByText('Hola')).not.toBeInTheDocument();
+  });
+});
+
+describe('App: copy and listen', () => {
+  let clipboard;
+  let speech;
+  afterEach(() => {
+    clipboard?.restore();
+    speech?.restore();
+    clipboard = undefined;
+    speech = undefined;
+  });
+
+  async function translated(text = 'Hello') {
+    translateText.mockResolvedValue({ translatedText: 'Hola', detectedSource: 'en', target: 'es' });
+    const user = await renderApp();
+    await user.type(screen.getByLabelText('Your text'), text);
+    await user.click(translateButton());
+    await screen.findByText('Hola');
+    return user;
+  }
+
+  it('does not show Copy or Listen before there is a translation', async () => {
+    await renderApp();
+    expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Listen' })).not.toBeInTheDocument();
+  });
+
+  it('copies the translation to the clipboard', async () => {
+    const user = await translated();
+    clipboard = mockClipboard();
+
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
+
+    expect(clipboard.writeText).toHaveBeenCalledWith('Hola');
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Copied to clipboard.');
+  });
+
+  it('reads the translation aloud in the target language', async () => {
+    speech = mockSpeech({ voices: [{ lang: 'es-MX', name: 'Spanish voice' }] });
+    const user = await translated();
+
+    await user.click(screen.getByRole('button', { name: 'Listen' }));
+
+    expect(speech.spoken[0]).toMatchObject({ text: 'Hola', lang: 'es-MX' });
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+  });
+
+  it('explains why Listen is unavailable in a browser without speech support', async () => {
+    await translated();
+    expect(screen.getByRole('button', { name: 'Listen' })).toBeDisabled();
+    expect(screen.getByText("This browser can't read text aloud.")).toBeInTheDocument();
+  });
+
+  it('stops speaking when a new translation replaces the old one', async () => {
+    speech = mockSpeech({ voices: [{ lang: 'es-MX', name: 'Spanish voice' }] });
+    const user = await translated();
+    await user.click(screen.getByRole('button', { name: 'Listen' }));
+    speech.synth.cancel.mockClear();
+
+    translateText.mockResolvedValue({ translatedText: 'Adiós', target: 'es' });
+    await user.type(screen.getByLabelText('Your text'), '!');
+    await user.click(translateButton());
+    await screen.findByText('Adiós');
+
+    expect(speech.synth.cancel).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Listen' })).toBeInTheDocument();
+  });
+
+  it('copies the swapped-in text after a swap', async () => {
+    const user = await translated('Hello');
+    clipboard = mockClipboard();
+
+    await user.click(screen.getByRole('button', { name: 'Swap languages' }));
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
+
+    expect(clipboard.writeText).toHaveBeenCalledWith('Hello');
+  });
+});
+
+describe('App: keyboard focus', () => {
+  it('keeps focus on Translate while loading and after the result', async () => {
+    const pending = deferred();
+    translateText.mockReturnValue(pending.promise);
+    const user = await renderApp();
+    await user.type(screen.getByLabelText('Your text'), 'Hello');
+
+    translateButton().focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Translating…' })).toHaveFocus();
+
+    pending.resolve({ translatedText: 'Hola', target: 'es' });
+    await screen.findByText('Hola');
+    expect(translateButton()).toHaveFocus();
+  });
+
+  it('returns focus to the text box after Clear', async () => {
+    const user = await renderApp();
+    await user.type(screen.getByLabelText('Your text'), 'Hello');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(screen.getByLabelText('Your text')).toHaveFocus();
+  });
+
+  it('moves focus to the text box every time validation fails', async () => {
+    const user = await renderApp();
+    translateButton().focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByLabelText('Your text')).toHaveFocus();
+
+    translateButton().focus();
+    await user.keyboard('{Enter}'); // same message again: focus must still move
+    expect(screen.getByLabelText('Your text')).toHaveFocus();
+  });
+
+  it('hands focus to Translate when retrying, since the error view disappears', async () => {
+    translateText.mockRejectedValueOnce(new ApiError('Down.', { kind: 'http', status: 502 }));
+    translateText.mockResolvedValueOnce({ translatedText: 'Hola', target: 'es' });
+    const user = await renderApp();
+    await user.type(screen.getByLabelText('Your text'), 'Hello');
+    await user.click(translateButton());
+    await screen.findByText("Couldn't translate");
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await screen.findByText('Hola');
+    expect(translateButton()).toHaveFocus();
+  });
+});
+
+describe('App: machine translation notice', () => {
+  it('always reminds people that machine translation can be wrong', async () => {
+    await renderApp();
+    expect(screen.getByText(/machine translation can contain errors/i)).toBeInTheDocument();
   });
 });

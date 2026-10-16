@@ -218,6 +218,8 @@ textarea {
 }
 
 .link-btn {
+  min-width: 44px;
+  min-height: 44px;
   padding: 4px 8px;
   color: var(--indigo-deep);
   font-size: var(--text-sm);
@@ -341,7 +343,7 @@ textarea {
   cursor: pointer;
 }
 
-.btn:active:not(:disabled) {
+.btn:active:not(:disabled):not([aria-disabled='true']) {
   box-shadow: 0 1px 0 var(--ink);
   transform: translateY(3px);
 }
@@ -353,7 +355,7 @@ textarea {
   background: var(--indigo);
 }
 
-.btn--primary:hover:not(:disabled) {
+.btn--primary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--indigo-deep);
 }
 
@@ -362,16 +364,61 @@ textarea {
   background: var(--white);
 }
 
-.btn--outline:hover:not(:disabled) {
+.btn--outline:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--lavender);
 }
 
-.btn:disabled {
+.btn:disabled,
+.btn[aria-disabled='true'] {
   color: var(--muted);
   background: var(--periwinkle-soft);
   box-shadow: none;
   cursor: not-allowed;
   transform: translateY(3px);
+}
+
+.btn[aria-disabled='true'] {
+  cursor: progress;
+}
+
+/* ---------- output actions ---------- */
+.output-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn--small {
+  min-height: 44px;
+  padding: 6px 18px;
+  font-size: var(--text-sm);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.btn--solid {
+  color: var(--white);
+  background: var(--indigo);
+}
+
+.btn--solid:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--indigo-deep);
+}
+
+.action-status {
+  flex-basis: 100%;
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.notice {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: center;
 }
 
 /* ---------- small screens ---------- */
@@ -415,7 +462,7 @@ textarea {
     animation: none;
   }
 
-  .btn:active:not(:disabled) {
+  .btn:active:not(:disabled):not([aria-disabled='true']) {
     transform: none;
   }
 }

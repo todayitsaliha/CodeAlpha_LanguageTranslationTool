@@ -1,5 +1,6 @@
 import ErrorView from './ErrorView';
 import LoadingView from './LoadingView';
+import OutputActions from './OutputActions';
 
 /**
  * The output side. All states render inside one polite live region so screen readers hear
@@ -41,6 +42,15 @@ export default function OutputPanel({ status, result, error, languageName, onRet
           <p className="placeholder">Your translation appears here.</p>
         )}
       </div>
+
+      {showResult && (
+        <OutputActions
+          key={`${result.target}:${result.translatedText}`}
+          text={result.translatedText}
+          lang={result.target}
+          languageName={languageName(result.target)}
+        />
+      )}
     </div>
   );
 }

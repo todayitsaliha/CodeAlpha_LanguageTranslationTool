@@ -54,4 +54,8 @@ image assets and they stay sharp at any size. `public/favicon.svg` is generated 
   response is never shown.
 - A failed request keeps the text. Editing the text after an error dismisses the error.
 - Swap is disabled while "Detect language" is selected until a translation has detected the language.
+- Copy uses the Clipboard API on HTTPS and falls back to selecting text elsewhere; Listen uses the browser's SpeechSynthesis,
+  is disabled (with the reason shown) when no voice exists for the language, and gives up with a message if audio never starts.
+- Keyboard focus is never dropped: Translate uses `aria-disabled` while loading, Clear and failed validation focus the text box,
+  Try again hands focus to Translate. `src/a11y.test.jsx` runs axe on every screen state.
 - Tests mock the API module; `src/test/configStub.js` replaces `appConfig.js` because Jest cannot parse `import.meta.env`.

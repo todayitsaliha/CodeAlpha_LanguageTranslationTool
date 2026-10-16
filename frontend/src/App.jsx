@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { config } from './appConfig';
 import ErrorView from './components/ErrorView';
 import Header from './components/Header';
@@ -21,12 +21,19 @@ export default function App() {
   );
   const languageName = (code) => namesByCode.get(code) ?? code;
 
+  const translateButton = useRef(null);
   const ready = languageList.status === 'ready';
   const loading = state.status === 'loading';
 
   function handleSubmit(event) {
     event.preventDefault();
     translator.submit();
+  }
+
+  // The error view disappears when retrying, so hand focus to a control that stays put.
+  function handleRetry() {
+    translator.submit();
+    translateButton.current?.focus();
   }
 
   return (
@@ -65,6 +72,7 @@ export default function App() {
                   value={state.text}
                   maxLength={config.maxTextLength}
                   validationMessage={state.validationError}
+                  focusSignal={state.validationVersion}
                   onChange={translator.setText}
                   onClear={translator.clear}
                 />
@@ -73,15 +81,26 @@ export default function App() {
                   result={state.result}
                   error={state.error}
                   languageName={languageName}
-                  onRetry={translator.submit}
+                  onRetry={handleRetry}
                 />
               </div>
               <div className="actions">
-                <button type="submit" className="btn btn--primary" disabled={!ready || loading}>
+                {/* aria-disabled (not disabled) while loading, so keyboard focus stays on the button */}
+                <button
+                  ref={translateButton}
+                  type="submit"
+                  className="btn btn--primary"
+                  disabled={!ready}
+                  aria-disabled={loading || undefined}
+                >
                   <PixelSprite layers={BUTTON_SPARKLE} scale={2} />
                   {loading ? 'Translating…' : 'Translate'}
                 </button>
               </div>
+              <p className="notice">
+                Machine translation can contain errors. Check anything important before you rely on
+                it.
+              </p>
             </>
           )}
         </form>
